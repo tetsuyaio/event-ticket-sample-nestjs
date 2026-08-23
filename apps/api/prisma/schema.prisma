@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  CANCELLED
+}
+
+enum ReservationStatus {
+  RESERVED
+  CANCELLED
+}
+
+enum TicketStatus {
+  VALID
+  CANCELLED
+}
+
+model User {
+  id           String        @id @default(uuid()) @db.Uuid
+  email        String        @unique
+  passwordHash String
+  name         String
+  role         Role          @default(USER)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  events       Event[]       @relation("EventCreator")
+  reservations Reservation[]
+}
+
+model Event {
+  id            String        @id @default(uuid()) @db.Uuid
+  title         String
+  description   String        @db.Text
+  venue         String
+  startsAt      DateTime
+  endsAt        DateTime
+  capacity      Int
+  reservedCount Int           @default(0)
+  status        EventStatus   @default(DRAFT)
+  createdBy     String        @db.Uuid
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  creator       User          @relation("EventCreator", fields: [createdBy], references: [id])
+  reservations  Reservation[]
+
+  @@index([status, startsAt])
+}
+
+model Reservation {
+  id          String            @id @default(uuid()) @db.Uuid
+  userId      String            @db.Uuid
+  eventId     String            @db.Uuid
+  status      ReservationStatus @default(RESERVED)
+  reservedAt  DateTime          @default(now())
+  cancelledAt DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  user        User              @relation(fields: [userId], references: [id])
+  event       Event             @relation(fields: [eventId], references: [id])
+  ticket      Ticket?
+
+  @@unique([userId, eventId])
+  @@index([userId, status])
+}
+
+model Ticket {
+  id            String       @id @default(uuid()) @db.Uuid
+  reservationId String       @unique @db.Uuid
+  ticketNumber  String       @unique
+  status        TicketStatus @default(VALID)
+  issuedAt      DateTime     @default(now())
+  createdAt     DateTime     @default(now())
+  reservation   Reservation  @relation(fields: [reservationId], references: [id])
+}

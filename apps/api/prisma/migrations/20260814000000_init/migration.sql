@@ -1,0 +1,18 @@
+CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN');
+CREATE TYPE "EventStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'CLOSED', 'CANCELLED');
+CREATE TYPE "ReservationStatus" AS ENUM ('RESERVED', 'CANCELLED');
+CREATE TYPE "TicketStatus" AS ENUM ('VALID', 'CANCELLED');
+CREATE TABLE "User" ("id" UUID NOT NULL, "email" TEXT NOT NULL, "passwordHash" TEXT NOT NULL, "name" TEXT NOT NULL, "role" "Role" NOT NULL DEFAULT 'USER', "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "User_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "Event" ("id" UUID NOT NULL, "title" TEXT NOT NULL, "description" TEXT NOT NULL, "venue" TEXT NOT NULL, "startsAt" TIMESTAMP(3) NOT NULL, "endsAt" TIMESTAMP(3) NOT NULL, "capacity" INTEGER NOT NULL, "reservedCount" INTEGER NOT NULL DEFAULT 0, "status" "EventStatus" NOT NULL DEFAULT 'DRAFT', "createdBy" UUID NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "Event_pkey" PRIMARY KEY ("id"), CONSTRAINT "Event_capacity_check" CHECK ("capacity" > 0), CONSTRAINT "Event_reserved_count_check" CHECK ("reservedCount" >= 0 AND "reservedCount" <= "capacity"), CONSTRAINT "Event_dates_check" CHECK ("startsAt" < "endsAt"));
+CREATE TABLE "Reservation" ("id" UUID NOT NULL, "userId" UUID NOT NULL, "eventId" UUID NOT NULL, "status" "ReservationStatus" NOT NULL DEFAULT 'RESERVED', "reservedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "cancelledAt" TIMESTAMP(3), "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "Reservation_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "Ticket" ("id" UUID NOT NULL, "reservationId" UUID NOT NULL, "ticketNumber" TEXT NOT NULL, "status" "TicketStatus" NOT NULL DEFAULT 'VALID', "issuedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "Ticket_pkey" PRIMARY KEY ("id"));
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+CREATE INDEX "Event_status_startsAt_idx" ON "Event"("status", "startsAt");
+CREATE UNIQUE INDEX "Reservation_userId_eventId_key" ON "Reservation"("userId", "eventId");
+CREATE INDEX "Reservation_userId_status_idx" ON "Reservation"("userId", "status");
+CREATE UNIQUE INDEX "Ticket_reservationId_key" ON "Ticket"("reservationId");
+CREATE UNIQUE INDEX "Ticket_ticketNumber_key" ON "Ticket"("ticketNumber");
+ALTER TABLE "Event" ADD CONSTRAINT "Event_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Reservation" ADD CONSTRAINT "Reservation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Reservation" ADD CONSTRAINT "Reservation_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Ticket" ADD CONSTRAINT "Ticket_reservationId_fkey" FOREIGN KEY ("reservationId") REFERENCES "Reservation"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

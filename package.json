@@ -1,0 +1,19 @@
+{
+  "name": "event-ticket-sample-nestjs",
+  "private": true,
+  "packageManager": "pnpm@11.3.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter ./apps/* dev",
+    "dev:api": "pnpm --filter ./apps/api start:dev",
+    "dev:web": "pnpm --filter ./apps/web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "format": "prettier --write .",
+    "prisma:generate": "pnpm --filter ./apps/api prisma:generate",
+    "prisma:migrate": "pnpm --filter ./apps/api prisma:migrate"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2"
+  }
+}
